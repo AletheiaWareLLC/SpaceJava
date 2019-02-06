@@ -17,14 +17,4 @@
 set -e
 set -x
 
-rm -r out
-mkdir out
-
-SOURCES=(
-    source/com/aletheiaware/space/Space.java
-    source/com/aletheiaware/space/SpaceProto.java
-    source/com/aletheiaware/space/utils/SpaceUtils.java
-)
-
-javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar ${SOURCES[*]} -d out
-jar cvf out/SpaceJava.jar -C out .
+java -classpath libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:out/SpaceJava.jar com.aletheiaware.space.Space

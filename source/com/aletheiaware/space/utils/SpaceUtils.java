@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Aletheia Ware LLC
+ * Copyright 2019 Aletheia Ware LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,20 @@
 
 package com.aletheiaware.space.utils;
 
-import com.aletheiaware.bc.BC.Block;
-import com.aletheiaware.bc.BC.BlockEntry;
-import com.aletheiaware.bc.BC.Message;
-import com.aletheiaware.bc.BC.Message.Access;
-import com.aletheiaware.bc.BC.Reference;
+import com.aletheiaware.bc.BCProto.Block;
+import com.aletheiaware.bc.BCProto.BlockEntry;
+import com.aletheiaware.bc.BCProto.CompressionAlgorithm;
+import com.aletheiaware.bc.BCProto.EncryptionAlgorithm;
+import com.aletheiaware.bc.BCProto.Record;
+import com.aletheiaware.bc.BCProto.Record.Access;
+import com.aletheiaware.bc.BCProto.Reference;
+import com.aletheiaware.bc.BCProto.SignatureAlgorithm;
 import com.aletheiaware.bc.utils.BCUtils;
-import com.aletheiaware.space.Space.Meta;
-import com.aletheiaware.space.Space.Registration;
-import com.aletheiaware.space.Space.StorageRequest;
-import com.aletheiaware.space.Space.StorageRequest.Bundle;
-import com.aletheiaware.space.Space.StorageResponse;
+import com.aletheiaware.finance.FinanceProto.Subscription;
+import com.aletheiaware.space.SpaceProto.Meta;
+import com.aletheiaware.space.SpaceProto.StorageRequest;
+import com.aletheiaware.space.SpaceProto.StorageRequest.Bundle;
+import com.aletheiaware.space.SpaceProto.StorageResponse;
 import com.google.protobuf.ByteString;
 
 import java.io.File;
@@ -70,14 +73,15 @@ public final class SpaceUtils {
     public static final String FILE_CHANNEL_PREFIX = "Space File ";
     public static final String META_CHANNEL_PREFIX = "Space Meta ";
     public static final String PREVIEW_CHANNEL_PREFIX = "Space Preview ";
-    public static final String REGISTRATION_CHANNEL = "Space Registration";
 
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
     public static final String IMAGE_PNG_TYPE = "image/png";
     public static final String IMAGE_WEBP_TYPE = "image/webp";
     public static final String TEXT_PLAIN_TYPE = "text/plain";
     public static final String PROTOBUF_TYPE = "application/x-protobuf";
-    public static final String UNKNOWN_TYPE = "";
+
+    public static final String DEFAULT_IMAGE_TYPE = "image/png";
+    public static final String DEFAULT_VIDEO_TYPE = "video/mpeg";
 
     public static final int PREVIEW_IMAGE_SIZE = 128;
     public static final int PREVIEW_TEXT_LENGTH = 128;
@@ -85,6 +89,8 @@ public final class SpaceUtils {
     public static final int SOCKET_TIMEOUT = 2 * 60 * 1000;// 2 minutes
 
     private static final DateFormat FORMATTER = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
+
+    private SpaceUtils() {}
 
     public static String sizeToString(long size) {
         if (size <= 1024) {
@@ -140,10 +146,13 @@ public final class SpaceUtils {
                 type = PROTOBUF_TYPE;
             } else {
                 System.err.println("Unrecognized file type: " + filename);
-                type = UNKNOWN_TYPE;
             }
         }
         return type;
+    }
+
+    public static boolean isVideo(String type) {
+        return type.startsWith("video/");
     }
 
     public static boolean isImage(String type) {
@@ -155,7 +164,7 @@ public final class SpaceUtils {
     }
 
     /**
-     * Sorts a list of Message hashes by the timestamp of the Meta they map to.
+     * Sorts a list of Record hashes by the timestamp of the Meta they map to.
      */
     public static void sort(List<ByteString> hashes, Map<ByteString, Long> timestamps) {
         Collections.sort(hashes, new Comparator<ByteString>() {
@@ -172,14 +181,18 @@ public final class SpaceUtils {
         byte[] signature = BCUtils.sign(keyPair.getPrivate(), payload);
         return Bundle.newBuilder()
                 .setKey(ByteString.copyFrom(BCUtils.encryptRSA(keyPair.getPublic(), key)))
+                .setKeyEncryptionAlgorithm(EncryptionAlgorithm.RSA_ECB_OAEPPADDING)
                 .setPayload(ByteString.copyFrom(payload))
+                .setCompressionAlgorithm(CompressionAlgorithm.UNKNOWN_COMPRESSION)
+                .setEncryptionAlgorithm(EncryptionAlgorithm.AES_GCM_NOPADDING)
                 .setSignature(ByteString.copyFrom(signature))
+                .setSignatureAlgorithm(SignatureAlgorithm.SHA512WITHRSA)
                 .build();
     }
 
-    public static StorageRequest createRequest(KeyPair keys, String customerId, String paymentId, String name, String type, byte[] data, byte[] preview) throws BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
+    public static StorageRequest createRequest(String alias, KeyPair keys, String customerId, String paymentId, String name, String type, byte[] data, byte[] preview) throws BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
         StorageRequest.Builder rb = StorageRequest.newBuilder()
-                .setPublicKey(ByteString.copyFrom(keys.getPublic().getEncoded()))
+                .setAlias(alias)
                 .setFile(createBundle(keys, data))
                 .setMeta(createBundle(keys, Meta.newBuilder()
                         .setName(name)
@@ -198,85 +211,6 @@ public final class SpaceUtils {
         return rb.build();
     }
 
-    public static String getCustomerId(InetAddress address, KeyPair keys) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, BadPaddingException {
-        Reference head = getHead(address, Reference.newBuilder()
-                .setChannelName(REGISTRATION_CHANNEL)
-                .build());
-        if (head != null) {
-            ByteString publicKeyHash = ByteString.copyFrom(BCUtils.getHash(keys.getPublic().getEncoded()));
-            ByteString bh = head.getBlockHash();
-            while (bh != null && !bh.isEmpty()) {
-                Block b = getBlock(address, Reference.newBuilder()
-                        .setBlockHash(bh)
-                        .setChannelName(REGISTRATION_CHANNEL)
-                        .build());
-                for (BlockEntry e : b.getEntryList()) {
-                    Message m = e.getMessage();
-                    for (Message.Access a : m.getRecipientList()) {
-                        if (a.getPublicKeyHash().equals(publicKeyHash)) {
-                            byte[] key = a.getSecretKey().toByteArray();
-                            byte[] decryptedKey = BCUtils.decryptRSA(keys.getPrivate(), key);
-                            byte[] decryptedPayload = BCUtils.decryptAES(decryptedKey, m.getPayload().toByteArray());
-                            return Registration.parseFrom(decryptedPayload).getCustomerId();
-                        }
-                    }
-                }
-                bh = b.getPrevious();
-            }
-        }
-        return null;
-    }
-
-    public static Reference getHead(InetAddress address, Reference reference) throws IOException {
-        int port = BCUtils.PORT_HEAD;
-        Socket s = new Socket(address, port);
-        InputStream in = s.getInputStream();
-        OutputStream out = s.getOutputStream();
-        reference.writeDelimitedTo(out);
-        out.flush();
-        return Reference.parseDelimitedFrom(in);
-    }
-
-    public static Block getBlock(InetAddress address, Reference reference) throws IOException {
-        int port = BCUtils.PORT_BLOCK;
-        Socket s = new Socket(address, port);
-        InputStream in = s.getInputStream();
-        OutputStream out = s.getOutputStream();
-        reference.writeDelimitedTo(out);
-        out.flush();
-        return Block.parseDelimitedFrom(in);
-    }
-
-    public static byte[] getMessageData(InetAddress address, KeyPair keys, Reference reference) throws BadPaddingException, IOException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
-        Block block = getBlock(address, reference);
-        if (block != null) {
-            ByteString messageHash = reference.getMessageHash();
-            ByteString keyHash = ByteString.copyFrom(BCUtils.getHash(keys.getPublic().getEncoded()));
-            for (BlockEntry e : block.getEntryList()) {
-                if (e.getMessageHash().equals(messageHash)) {
-                    Message m = e.getMessage();
-                    for (Access a : m.getRecipientList()) {
-                        if (a.getPublicKeyHash().equals(keyHash)) {
-                            // TODO check signature
-                            // Decrypt secret key
-                            byte[] key = BCUtils.decryptRSA(keys.getPrivate(), a.getSecretKey().toByteArray());
-                            // Decrypt payload
-                            // TODO get cipher type from message
-                            byte[] payload = BCUtils.decryptAES(key, m.getPayload().toByteArray());
-                            return payload;
-                        }
-                    }
-                    System.err.println("No access for given keypair");
-                    return null;
-                }
-            }
-            System.err.println("No message found for given hash");
-            return null;
-        }
-        System.err.println("No block found for given reference");
-        return null;
-    }
-
     public static StorageResponse sendRequest(InetAddress address, StorageRequest request) throws IOException {
         int port = BCUtils.PORT_WRITE;
         Socket s = new Socket(address, port);
@@ -285,6 +219,35 @@ public final class SpaceUtils {
         request.writeDelimitedTo(out);
         out.flush();
         return StorageResponse.parseDelimitedFrom(in);
+    }
+
+    public static byte[] getRecordData(InetAddress address, String alias, KeyPair keys, Reference reference) throws BadPaddingException, IOException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
+        Block block = BCUtils.getBlock(address, reference);
+        if (block != null) {
+            ByteString recordHash = reference.getRecordHash();
+            for (BlockEntry e : block.getEntryList()) {
+                if (e.getRecordHash().equals(recordHash)) {
+                    Record r = e.getRecord();
+                    for (Access a : r.getAccessList()) {
+                        if (a.getAlias().equals(alias)) {
+                            // TODO check signature
+                            // Decrypt secret key
+                            byte[] key = BCUtils.decryptRSA(keys.getPrivate(), a.getSecretKey().toByteArray());
+                            // Decrypt payload
+                            // TODO get cipher type from record
+                            byte[] payload = BCUtils.decryptAES(key, r.getPayload().toByteArray());
+                            return payload;
+                        }
+                    }
+                    System.err.println("No access for given keypair");
+                    return null;
+                }
+            }
+            System.err.println("No record found for given hash");
+            return null;
+        }
+        System.err.println("No block found for given reference");
+        return null;
     }
 
 }
