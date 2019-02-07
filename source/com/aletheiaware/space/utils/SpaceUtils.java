@@ -38,6 +38,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -56,6 +59,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -65,10 +69,14 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.HttpsURLConnection;
 
 public final class SpaceUtils {
 
     public static final String TAG = "Space";
+
+    public static final String SPACE_HOST = "space.aletheiaware.com";
+    public static final String SPACE_WEBSITE = "https://space.aletheiaware.com";
 
     public static final String FILE_CHANNEL_PREFIX = "Space File ";
     public static final String META_CHANNEL_PREFIX = "Space Meta ";
@@ -248,6 +256,34 @@ public final class SpaceUtils {
         }
         System.err.println("No block found for given reference");
         return null;
+    }
+
+    public static void subscribe(String alias, String email, String paymentId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        String params = "alias=" + URLEncoder.encode(alias, "utf-8")
+                + "&stripeToken=" + URLEncoder.encode(paymentId, "utf-8")
+                + "&stripeEmail=" + URLEncoder.encode(email, "utf-8");
+        System.out.println("Params:" + params);
+        byte[] data = params.getBytes(StandardCharsets.UTF_8);
+        URL url = new URL(SPACE_WEBSITE+"/subscription");
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setDoOutput(true);
+        conn.setInstanceFollowRedirects(false);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        conn.setRequestProperty("charset", "utf-8");
+        conn.setRequestProperty("Content-Length", Integer.toString(data.length));
+        conn.setUseCaches(false);
+        try (OutputStream o = conn.getOutputStream()) {
+            o.write(data);
+            o.flush();
+        }
+
+        int response = conn.getResponseCode();
+        System.out.println("Response: " + response);
+        Scanner in = new Scanner(conn.getInputStream());
+        while (in.hasNextLine()) {
+            System.out.println(in.nextLine());
+        }
     }
 
 }
