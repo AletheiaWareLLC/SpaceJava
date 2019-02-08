@@ -129,8 +129,8 @@ public final class SpaceUtils {
         return String.format("%.2f %s", s, unit);
     }
 
-    public static String timeToString(long timestamp) {
-        return FORMATTER.format(new Date(timestamp));
+    public static String timeToString(long timestampNS) {
+        return FORMATTER.format(new Date(timestampNS/1000000));
     }
 
     public static String getFileType(File file) throws IOException {
