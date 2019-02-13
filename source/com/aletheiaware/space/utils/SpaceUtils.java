@@ -27,9 +27,6 @@ import com.aletheiaware.bc.BCProto.SignatureAlgorithm;
 import com.aletheiaware.bc.utils.BCUtils;
 import com.aletheiaware.finance.FinanceProto.Subscription;
 import com.aletheiaware.space.SpaceProto.Meta;
-import com.aletheiaware.space.SpaceProto.StorageRequest;
-import com.aletheiaware.space.SpaceProto.StorageRequest.Bundle;
-import com.aletheiaware.space.SpaceProto.StorageResponse;
 import com.google.protobuf.ByteString;
 
 import java.io.File;
@@ -102,7 +99,7 @@ public final class SpaceUtils {
 
     public static String sizeToString(long size) {
         if (size <= 1024) {
-            return String.format("%d bytes", size);
+            return String.format("%dbytes", size);
         }
         String unit = "";
         double s = size;
@@ -126,11 +123,11 @@ public final class SpaceUtils {
             s /= 1024;
             unit = "Pb";
         }
-        return String.format("%.2f %s", s, unit);
+        return String.format("%.2f%s", s, unit);
     }
 
-    public static String timeToString(long timestampNS) {
-        return FORMATTER.format(new Date(timestampNS/1000000));
+    public static String timeToString(long nanos) {
+        return FORMATTER.format(new Date(nanos/1000000));
     }
 
     public static String getFileType(File file) throws IOException {
@@ -181,52 +178,6 @@ public final class SpaceUtils {
                 return Long.compare(timestamps.get(b1), timestamps.get(b2));
             }
         });
-    }
-
-    public static Bundle createBundle(KeyPair keyPair, byte[] data) throws BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
-        byte[] key = BCUtils.generateSecretKey(BCUtils.AES_KEY_SIZE_BYTES);
-        byte[] payload = BCUtils.encryptAES(key, data);
-        byte[] signature = BCUtils.sign(keyPair.getPrivate(), payload);
-        return Bundle.newBuilder()
-                .setKey(ByteString.copyFrom(BCUtils.encryptRSA(keyPair.getPublic(), key)))
-                .setKeyEncryptionAlgorithm(EncryptionAlgorithm.RSA_ECB_OAEPPADDING)
-                .setPayload(ByteString.copyFrom(payload))
-                .setCompressionAlgorithm(CompressionAlgorithm.UNKNOWN_COMPRESSION)
-                .setEncryptionAlgorithm(EncryptionAlgorithm.AES_GCM_NOPADDING)
-                .setSignature(ByteString.copyFrom(signature))
-                .setSignatureAlgorithm(SignatureAlgorithm.SHA512WITHRSA)
-                .build();
-    }
-
-    public static StorageRequest createRequest(String alias, KeyPair keys, String customerId, String paymentId, String name, String type, byte[] data, byte[] preview) throws BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
-        StorageRequest.Builder rb = StorageRequest.newBuilder()
-                .setAlias(alias)
-                .setFile(createBundle(keys, data))
-                .setMeta(createBundle(keys, Meta.newBuilder()
-                        .setName(name)
-                        .setType(type)
-                        .setSize(data.length)
-                        .build()
-                        .toByteArray()));
-        if (customerId != null) {
-            rb.setCustomerId(customerId);
-        } else {
-            rb.setPaymentId(paymentId);
-        }
-        if (preview != null) {
-            rb.setPreview(createBundle(keys, preview));
-        }
-        return rb.build();
-    }
-
-    public static StorageResponse sendRequest(InetAddress address, StorageRequest request) throws IOException {
-        int port = BCUtils.PORT_WRITE;
-        Socket s = new Socket(address, port);
-        InputStream in = s.getInputStream();
-        OutputStream out = s.getOutputStream();
-        request.writeDelimitedTo(out);
-        out.flush();
-        return StorageResponse.parseDelimitedFrom(in);
     }
 
     public static byte[] getRecordData(InetAddress address, String alias, KeyPair keys, Reference reference) throws BadPaddingException, IOException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
