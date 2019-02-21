@@ -1,7 +1,7 @@
 SpaceJava
 =========
 
-This is a Java implementation of Space: an end-to-end encrypted, blockchain storage platform.
+This is a Java implementation of Space - end-to-end encrypted, blockchain-backed, data storage.
 
 Setup
 =====

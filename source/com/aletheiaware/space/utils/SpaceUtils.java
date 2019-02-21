@@ -50,10 +50,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.DateFormat;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -75,60 +73,29 @@ public final class SpaceUtils {
     public static final String SPACE_HOST = "space.aletheiaware.com";
     public static final String SPACE_WEBSITE = "https://space.aletheiaware.com";
 
-    public static final String FILE_CHANNEL_PREFIX = "Space File ";
-    public static final String META_CHANNEL_PREFIX = "Space Meta ";
-    public static final String PREVIEW_CHANNEL_PREFIX = "Space Preview ";
+    public static final String FILE_CHANNEL_PREFIX = "Space-File-";
+    public static final String META_CHANNEL_PREFIX = "Space-Meta-";
+    public static final String PREVIEW_CHANNEL_PREFIX = "Space-Preview-";
+    public static final String SHARE_CHANNEL_PREFIX = "Space-Share-";
+    public static final String TAG_CHANNEL_PREFIX = "Space-Tag-";
 
+    public static final String UNKNOWN_TYPE = "?/?";
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
     public static final String IMAGE_PNG_TYPE = "image/png";
     public static final String IMAGE_WEBP_TYPE = "image/webp";
     public static final String TEXT_PLAIN_TYPE = "text/plain";
     public static final String PROTOBUF_TYPE = "application/x-protobuf";
+    public static final String VIDEO_MPEG_TYPE = "video/mpeg";
 
-    public static final String DEFAULT_IMAGE_TYPE = "image/png";
+    public static final String DEFAULT_IMAGE_TYPE = "image/jpeg";
     public static final String DEFAULT_VIDEO_TYPE = "video/mpeg";
 
-    public static final int PREVIEW_IMAGE_SIZE = 128;
-    public static final int PREVIEW_TEXT_LENGTH = 128;
+    public static final int PREVIEW_IMAGE_SIZE = 64;
+    public static final int PREVIEW_TEXT_LENGTH = 64;
 
     public static final int SOCKET_TIMEOUT = 2 * 60 * 1000;// 2 minutes
 
-    private static final DateFormat FORMATTER = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
-
     private SpaceUtils() {}
-
-    public static String sizeToString(long size) {
-        if (size <= 1024) {
-            return String.format("%dbytes", size);
-        }
-        String unit = "";
-        double s = size;
-        if (s >= 1024) {
-            s /= 1024;
-            unit = "Kb";
-        }
-        if (s >= 1024) {
-            s /= 1024;
-            unit = "Mb";
-        }
-        if (s >= 1024) {
-            s /= 1024;
-            unit = "Gb";
-        }
-        if (s >= 1024) {
-            s /= 1024;
-            unit = "Tb";
-        }
-        if (s >= 1024) {
-            s /= 1024;
-            unit = "Pb";
-        }
-        return String.format("%.2f%s", s, unit);
-    }
-
-    public static String timeToString(long nanos) {
-        return FORMATTER.format(new Date(nanos/1000000));
-    }
 
     public static String getFileType(File file) throws IOException {
         String type = null;
@@ -137,21 +104,29 @@ public final class SpaceUtils {
         } catch (Exception e) {
             /* Ignored */
         }
-        if (type == null) {
-            String filename = file.getName();
-            if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
-                type = IMAGE_JPEG_TYPE;
-            } else if (filename.endsWith(".png")) {
-                type = IMAGE_PNG_TYPE;
-            } else if (filename.endsWith(".webp")) {
-                type = IMAGE_WEBP_TYPE;
-            } else if (filename.endsWith(".txt")) {
-                type = TEXT_PLAIN_TYPE;
-            } else if (filename.endsWith(".pb")) {
-                type = PROTOBUF_TYPE;
-            } else {
-                System.err.println("Unrecognized file type: " + filename);
-            }
+        if (type == null || type.isEmpty()) {
+            type = getTypeByExtension(file.getName());
+        }
+        return type;
+    }
+
+    public static String getTypeByExtension(String ext) {
+        String type = null;
+        if (ext.endsWith(".jpg") || ext.endsWith(".jpeg")) {
+            type = IMAGE_JPEG_TYPE;
+        } else if (ext.endsWith(".png")) {
+            type = IMAGE_PNG_TYPE;
+        } else if (ext.endsWith(".webp")) {
+            type = IMAGE_WEBP_TYPE;
+        } else if (ext.endsWith(".txt")) {
+            type = TEXT_PLAIN_TYPE;
+        } else if (ext.endsWith(".pb") || ext.endsWith(".proto")) {
+            type = PROTOBUF_TYPE;
+        } else if (ext.endsWith(".mpg") || ext.endsWith(".mpeg")  || ext.endsWith(".mp4")) {
+            type = VIDEO_MPEG_TYPE;
+        } else {
+            type = UNKNOWN_TYPE;
+            System.err.println("Unrecognized extention: " + ext);
         }
         return type;
     }
@@ -180,35 +155,35 @@ public final class SpaceUtils {
         });
     }
 
-    public static byte[] getRecordData(InetAddress address, String alias, KeyPair keys, Reference reference) throws BadPaddingException, IOException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, SignatureException {
-        Block block = BCUtils.getBlock(address, reference);
-        if (block != null) {
-            ByteString recordHash = reference.getRecordHash();
-            for (BlockEntry e : block.getEntryList()) {
-                if (e.getRecordHash().equals(recordHash)) {
-                    Record r = e.getRecord();
-                    for (Access a : r.getAccessList()) {
-                        if (a.getAlias().equals(alias)) {
-                            // TODO check signature
-                            // Decrypt secret key
-                            byte[] key = BCUtils.decryptRSA(keys.getPrivate(), a.getSecretKey().toByteArray());
-                            // Decrypt payload
-                            // TODO get cipher type from record
-                            byte[] payload = BCUtils.decryptAES(key, r.getPayload().toByteArray());
-                            return payload;
-                        }
-                    }
-                    System.err.println("No access for given keypair");
-                    return null;
-                }
-            }
-            System.err.println("No record found for given hash");
-            return null;
+    public static Reference postRecord(String feature, Record record) throws IOException {
+        URL url = new URL(SPACE_WEBSITE+"/mining/"+feature);
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setDoOutput(true);
+        conn.setInstanceFollowRedirects(false);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", PROTOBUF_TYPE);
+        conn.setUseCaches(false);
+        try (OutputStream o = conn.getOutputStream()) {
+            record.writeDelimitedTo(o);
+            o.flush();
         }
-        System.err.println("No block found for given reference");
+        int response = conn.getResponseCode();
+        System.out.println("Response: " + response);
+        if (response == HttpsURLConnection.HTTP_OK) {
+            return Reference.parseDelimitedFrom(conn.getInputStream());
+        }
         return null;
     }
 
+    public static void register(String alias, String email, String paymentId) {
+        // TODO create new customer
+    }
+
+    public static void subscribe(String customerId) {
+        // TODO create new subscription for customer
+    }
+
+    // Creates new customer and subscription
     public static void subscribe(String alias, String email, String paymentId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         String params = "alias=" + URLEncoder.encode(alias, "utf-8")
                 + "&stripeToken=" + URLEncoder.encode(paymentId, "utf-8")
