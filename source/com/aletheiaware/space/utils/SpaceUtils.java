@@ -157,6 +157,7 @@ public final class SpaceUtils {
 
     public static Reference postRecord(String feature, Record record) throws IOException {
         URL url = new URL(SPACE_WEBSITE+"/mining/"+feature);
+        // TODO use http keep alive for performance
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
         conn.setInstanceFollowRedirects(false);
@@ -175,22 +176,33 @@ public final class SpaceUtils {
         return null;
     }
 
-    public static void register(String alias, String email, String paymentId) {
-        // TODO create new customer
-    }
-
-    public static void subscribe(String customerId) {
-        // TODO create new subscription for customer
-    }
-
-    // Creates new customer and subscription
-    public static void subscribe(String alias, String email, String paymentId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    /**
+     * Register new customer
+     */
+    public static void register(String alias, String email, String paymentId) throws IOException {
         String params = "alias=" + URLEncoder.encode(alias, "utf-8")
                 + "&stripeToken=" + URLEncoder.encode(paymentId, "utf-8")
                 + "&stripeEmail=" + URLEncoder.encode(email, "utf-8");
         System.out.println("Params:" + params);
         byte[] data = params.getBytes(StandardCharsets.UTF_8);
-        URL url = new URL(SPACE_WEBSITE+"/subscription");
+        URL url = new URL(SPACE_WEBSITE+"/register");
+        post(url, data);
+    }
+
+    /**
+     * Subscribe customer to Remote Mining Service
+     */
+    public static void subscribe(String alias, String customerId) throws IOException {
+        String params = "alias=" + URLEncoder.encode(alias, "utf-8")
+                + "&customerId=" + URLEncoder.encode(customerId, "utf-8");
+        System.out.println("Params:" + params);
+        byte[] data = params.getBytes(StandardCharsets.UTF_8);
+        URL url = new URL(SPACE_WEBSITE+"/subscribe");
+        post(url, data);
+    }
+
+    public static void post(URL url, byte[] data) throws IOException {
+        // TODO use http keep alive and cache connection for future posts
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
         conn.setInstanceFollowRedirects(false);
