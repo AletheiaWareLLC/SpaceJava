@@ -146,22 +146,26 @@ public final class SpaceUtils {
     /**
      * Sorts a list of Record hashes by the timestamp of the Meta they map to.
      */
-    public static void sort(List<ByteString> hashes, Map<ByteString, Long> timestamps) {
+    public static void sort(List<ByteString> hashes, Map<ByteString, Long> timestamps, boolean chronologically) {
         Collections.sort(hashes, new Comparator<ByteString>() {
             @Override
             public int compare(ByteString b1, ByteString b2) {
-                return Long.compare(timestamps.get(b1), timestamps.get(b2));
+                if (chronologically) {
+                    return Long.compare(timestamps.get(b1), timestamps.get(b2));
+                }
+                return Long.compare(timestamps.get(b2), timestamps.get(b1));
             }
         });
     }
 
     public static Reference postRecord(String feature, Record record) throws IOException {
         URL url = new URL(SPACE_WEBSITE+"/mining/"+feature);
-        // TODO use http keep alive for performance
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
         conn.setInstanceFollowRedirects(false);
         conn.setRequestMethod("POST");
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Keep-Alive", "timeout=60000");
         conn.setRequestProperty("Content-Type", PROTOBUF_TYPE);
         conn.setUseCaches(false);
         try (OutputStream o = conn.getOutputStream()) {
@@ -171,7 +175,9 @@ public final class SpaceUtils {
         int response = conn.getResponseCode();
         System.out.println("Response: " + response);
         if (response == HttpsURLConnection.HTTP_OK) {
-            return Reference.parseDelimitedFrom(conn.getInputStream());
+            try (InputStream in = conn.getInputStream()) {
+                return Reference.parseDelimitedFrom(in);
+            }
         }
         return null;
     }
@@ -202,13 +208,14 @@ public final class SpaceUtils {
     }
 
     public static void post(URL url, byte[] data) throws IOException {
-        // TODO use http keep alive and cache connection for future posts
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
         conn.setInstanceFollowRedirects(false);
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         conn.setRequestProperty("charset", "utf-8");
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Keep-Alive", "timeout=60000");
         conn.setRequestProperty("Content-Length", Integer.toString(data.length));
         conn.setUseCaches(false);
         try (OutputStream o = conn.getOutputStream()) {
@@ -218,9 +225,13 @@ public final class SpaceUtils {
 
         int response = conn.getResponseCode();
         System.out.println("Response: " + response);
-        Scanner in = new Scanner(conn.getInputStream());
-        while (in.hasNextLine()) {
-            System.out.println(in.nextLine());
+        if (response == HttpsURLConnection.HTTP_OK) {
+            try (InputStream in = conn.getInputStream()) {
+                Scanner s = new Scanner(in);
+                while (s.hasNextLine()) {
+                    System.out.println(s.nextLine());
+                }
+            }
         }
     }
 
