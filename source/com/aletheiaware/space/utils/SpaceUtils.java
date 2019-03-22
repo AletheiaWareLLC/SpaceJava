@@ -156,10 +156,18 @@ public final class SpaceUtils {
         Collections.sort(hashes, new Comparator<ByteString>() {
             @Override
             public int compare(ByteString b1, ByteString b2) {
-                if (chronologically) {
-                    return Long.compare(timestamps.get(b1), timestamps.get(b2));
+                long t1 = 0L;
+                if (timestamps.containsKey(b1)) {
+                    t1 = timestamps.get(b1);
                 }
-                return Long.compare(timestamps.get(b2), timestamps.get(b1));
+                long t2 = 0L;
+                if (timestamps.containsKey(b2)) {
+                    t2 = timestamps.get(b2);
+                }
+                if (chronologically) {
+                    return Long.compare(t1, t2);
+                }
+                return Long.compare(t2, t1);
             }
         });
     }
