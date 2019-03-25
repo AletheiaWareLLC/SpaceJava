@@ -77,7 +77,9 @@ public final class SpaceUtils {
     public static final String TAG = "Space";
 
     public static final String SPACE_HOST = "space.aletheiaware.com";
+    public static final String SPACE_HOST_TEST = "test-space.aletheiaware.com";
     public static final String SPACE_WEBSITE = "https://space.aletheiaware.com";
+    public static final String SPACE_WEBSITE_TEST = "https://test-space.aletheiaware.com";
 
     public static final String FILE_CHANNEL_PREFIX = "Space-File-";
     public static final String META_CHANNEL_PREFIX = "Space-Meta-";
