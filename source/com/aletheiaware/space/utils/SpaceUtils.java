@@ -190,6 +190,11 @@ public final class SpaceUtils {
         files.read(alias, keys, fileRecordHash, callback);
     }
 
+    public static void readPreviews(InetAddress host, File cache, String alias, KeyPair keys, byte[] previewRecordHash, byte[] metaRecordHash, RecordCallback previewCallback) throws IOException {
+        final Channel previews = new Channel(PREVIEW_CHANNEL_PREFIX + new String(BCUtils.encodeBase64URL(metaRecordHash)), BCUtils.THRESHOLD_STANDARD, cache, host);
+        previews.read(alias, keys, previewRecordHash, previewCallback);
+    }
+
     public static void readShares(InetAddress host, File cache, String alias, KeyPair keys, byte[] shareRecordHash, byte[] metaRecordHash, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
         final Channel shares = new Channel(SHARE_CHANNEL_PREFIX + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
         try {
