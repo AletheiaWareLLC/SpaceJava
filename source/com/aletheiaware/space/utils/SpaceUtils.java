@@ -318,7 +318,7 @@ public final class SpaceUtils {
                 + "&stripeEmail=" + URLEncoder.encode(email, "utf-8");
         System.out.println("Params:" + params);
         byte[] data = params.getBytes(StandardCharsets.UTF_8);
-        URL url = new URL(SPACE_WEBSITE+"/register");
+        URL url = new URL(SPACE_WEBSITE+"/space-register");
         return postForID(url, data);
     }
 
@@ -330,7 +330,7 @@ public final class SpaceUtils {
                 + "&customerId=" + URLEncoder.encode(customerId, "utf-8");
         System.out.println("Params:" + params);
         byte[] data = params.getBytes(StandardCharsets.UTF_8);
-        URL url = new URL(SPACE_WEBSITE+"/subscribe");
+        URL url = new URL(SPACE_WEBSITE+"/space-subscribe");
         return postForID(url, data);
     }
 
