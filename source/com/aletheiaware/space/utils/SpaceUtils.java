@@ -81,11 +81,11 @@ public final class SpaceUtils {
     public static final String SPACE_WEBSITE = "https://space.aletheiaware.com";
     public static final String SPACE_WEBSITE_TEST = "https://test-space.aletheiaware.com";
 
-    public static final String FILE_CHANNEL_PREFIX = "Space-File-";
-    public static final String META_CHANNEL_PREFIX = "Space-Meta-";
-    public static final String PREVIEW_CHANNEL_PREFIX = "Space-Preview-";
-    public static final String SHARE_CHANNEL_PREFIX = "Space-Share-";
-    public static final String TAG_CHANNEL_PREFIX = "Space-Tag-";
+    public static final String SPACE_PREFIX_FILE = "Space-File-";
+    public static final String SPACE_PREFIX_META = "Space-Meta-";
+    public static final String SPACE_PREFIX_PREVIEW = "Space-Preview-";
+    public static final String SPACE_PREFIX_SHARE = "Space-Share-";
+    public static final String SPACE_PREFIX_TAG = "Space-Tag-";
 
     public static final String UNKNOWN_TYPE = "?/?";
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
@@ -175,7 +175,7 @@ public final class SpaceUtils {
     }
 
     public static void readMetas(InetAddress host, File cache, String alias, KeyPair keys, byte[] metaRecordHash, RecordCallback callback) throws IOException {
-        final Channel metas = new Channel(META_CHANNEL_PREFIX + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
+        final Channel metas = new Channel(SPACE_PREFIX_META + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
         try {
             metas.sync();
         } catch (IOException | NoSuchAlgorithmException e) {
@@ -186,17 +186,17 @@ public final class SpaceUtils {
     }
 
     public static void readFiles(InetAddress host, File cache, String alias, KeyPair keys, byte[] fileRecordHash, RecordCallback callback) throws IOException {
-        final Channel files = new Channel(FILE_CHANNEL_PREFIX + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
+        final Channel files = new Channel(SPACE_PREFIX_FILE + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
         files.read(alias, keys, fileRecordHash, callback);
     }
 
     public static void readPreviews(InetAddress host, File cache, String alias, KeyPair keys, byte[] previewRecordHash, byte[] metaRecordHash, RecordCallback previewCallback) throws IOException {
-        final Channel previews = new Channel(PREVIEW_CHANNEL_PREFIX + new String(BCUtils.encodeBase64URL(metaRecordHash)), BCUtils.THRESHOLD_STANDARD, cache, host);
+        final Channel previews = new Channel(SPACE_PREFIX_PREVIEW + new String(BCUtils.encodeBase64URL(metaRecordHash)), BCUtils.THRESHOLD_STANDARD, cache, host);
         previews.read(alias, keys, previewRecordHash, previewCallback);
     }
 
     public static void readShares(InetAddress host, File cache, String alias, KeyPair keys, byte[] shareRecordHash, byte[] metaRecordHash, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
-        final Channel shares = new Channel(SHARE_CHANNEL_PREFIX + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
+        final Channel shares = new Channel(SPACE_PREFIX_SHARE + alias, BCUtils.THRESHOLD_STANDARD, cache, host);
         try {
             shares.sync();
         } catch (IOException | NoSuchAlgorithmException e) {
