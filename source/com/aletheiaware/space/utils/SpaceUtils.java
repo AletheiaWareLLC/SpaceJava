@@ -276,8 +276,8 @@ public final class SpaceUtils {
         });
     }
 
-    public static Reference postRecord(String feature, Record record) throws IOException {
-        URL url = new URL(SPACE_WEBSITE+"/mining/"+feature);
+    public static Reference postRecord(String host, String feature, Record record) throws IOException {
+        URL url = new URL(host+"/mining/"+feature);
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
         conn.setInstanceFollowRedirects(false);
@@ -317,25 +317,25 @@ public final class SpaceUtils {
     /**
      * Register new customer
      */
-    public static String register(String alias, String email, String paymentId) throws IOException {
+    public static String register(String host, String alias, String email, String paymentId) throws IOException {
         String params = "api=1&alias=" + URLEncoder.encode(alias, "utf-8")
                 + "&stripeToken=" + URLEncoder.encode(paymentId, "utf-8")
                 + "&stripeEmail=" + URLEncoder.encode(email, "utf-8");
         System.out.println("Params:" + params);
         byte[] data = params.getBytes(StandardCharsets.UTF_8);
-        URL url = new URL(SPACE_WEBSITE+"/space-register");
+        URL url = new URL(host+"/space-register");
         return postForID(url, data);
     }
 
     /**
      * Subscribe customer to Remote Mining Service
      */
-    public static String subscribe(String alias, String customerId) throws IOException {
+    public static String subscribe(String host, String alias, String customerId) throws IOException {
         String params = "api=1&alias=" + URLEncoder.encode(alias, "utf-8")
                 + "&customerId=" + URLEncoder.encode(customerId, "utf-8");
         System.out.println("Params:" + params);
         byte[] data = params.getBytes(StandardCharsets.UTF_8);
-        URL url = new URL(SPACE_WEBSITE+"/space-subscribe");
+        URL url = new URL(host+"/space-subscribe");
         return postForID(url, data);
     }
 
