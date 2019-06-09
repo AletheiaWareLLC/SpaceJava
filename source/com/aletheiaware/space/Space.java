@@ -16,6 +16,7 @@
 
 package com.aletheiaware.space;
 
+import com.aletheiaware.bc.Crypto;
 import com.aletheiaware.bc.utils.BCUtils;
 import com.aletheiaware.bc.utils.BCUtils.Pair;
 
@@ -40,7 +41,7 @@ public class Space {
         try {
             File home = new File(System.getProperty("user.home"));
             File keystore = new File(home, "bc");
-            Pair<String, KeyPair> identity = GetIdentityConsole(keystore);
+            Pair<String, KeyPair> identity = getIdentityFromConsole(keystore);
             System.out.println(identity.a);
             System.out.println(identity.b);
         } catch (Exception e) {
@@ -48,13 +49,13 @@ public class Space {
         }
     }
 
-    public static Pair<String, KeyPair> GetIdentityConsole(File keystore) throws Exception {
+    public static Pair<String, KeyPair> getIdentityFromConsole(File keystore) throws Exception {
         String alias = null;
         KeyPair keys = null;
         Console console = System.console();
         if (console != null) {
             try {
-                List<String> ks = BCUtils.listRSAKeyPairs(keystore);
+                List<String> ks = Crypto.listRSAKeyPairs(keystore);
                 if (ks.isEmpty()) {
                     console.printf("Creating new keystore %s\n", keystore.getAbsolutePath());
                 } else {
@@ -66,7 +67,7 @@ public class Space {
                 alias = console.readLine("Enter alias:\n");
                 if (ks.contains(alias)) {
                     char[] password = console.readPassword("Enter password:\n");
-                    keys = BCUtils.getRSAKeyPair(keystore, alias, password);
+                    keys = Crypto.getRSAKeyPair(keystore, alias, password);
                 } else {
                     console.printf("New Key: %s\n", alias);
                     char[] password = console.readPassword("Enter password:\n");
@@ -78,7 +79,7 @@ public class Space {
                         System.err.println("Passwords do not match");
                         return null;
                     }
-                    keys = BCUtils.createRSAKeyPair(keystore, alias, password);
+                    keys = Crypto.createRSAKeyPair(keystore, alias, password);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
