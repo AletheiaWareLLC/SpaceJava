@@ -179,9 +179,41 @@ public final class SpaceUtils {
         });
     }
 
+    /**
+     * Sorts a list of hosts by the registration and subscription information.
+     */
+    public static void sort(List<String> hosts, Map<String, String> registrationIds, Map<String, String> subscriptionStorageIds, Map<String, String> subscriptionMiningIds) {
+        Collections.sort(hosts, new Comparator<String>() {
+            @Override
+            public int compare(String m1, String m2) {
+                if (!registrationIds.containsKey(m1)) {
+                    return 1;
+                }
+                if (!registrationIds.containsKey(m2)) {
+                    return -1;
+                }
+                // Registration with both hosts
+                if (!subscriptionStorageIds.containsKey(m1)) {
+                    return 1;
+                }
+                if (!subscriptionStorageIds.containsKey(m1)) {
+                    return -1;
+                }
+                // Storage subscription with both hosts
+                if (!subscriptionMiningIds.containsKey(m1)) {
+                    return 1;
+                }
+                if (!subscriptionMiningIds.containsKey(m1)) {
+                    return -1;
+                }
+                // Mining subscription with both hosts
+                return Integer.compare(m1.length(), m2.length());
+            }
+        });
+    }
+
     public static void readMetas(Cache cache, Network network, String alias, KeyPair keys, ByteString metaRecordHash, RecordCallback callback) throws IOException {
         final PoWChannel metas = new PoWChannel(SPACE_PREFIX_META + alias, BC.THRESHOLD_STANDARD);
-        ChannelUtils.loadHead(metas, cache, network);
         try {
             ChannelUtils.pull(metas, cache, network);
         } catch (NoSuchAlgorithmException e) {
@@ -208,7 +240,6 @@ public final class SpaceUtils {
 
     public static void readShares(Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
         final PoWChannel shares = new PoWChannel(SPACE_PREFIX_SHARE + alias, BC.THRESHOLD_STANDARD);
-        ChannelUtils.loadHead(shares, cache, network);
         try {
             ChannelUtils.pull(shares, cache, network);
         } catch (NoSuchAlgorithmException e) {
