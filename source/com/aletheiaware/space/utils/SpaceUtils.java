@@ -220,25 +220,27 @@ public final class SpaceUtils {
             /* Ignored */
             e.printStackTrace();
         }
-        ByteString head = metas.getHead();
-        ChannelUtils.read(head, null, cache, alias, keys, metaRecordHash, callback);
+        ChannelUtils.read(metas.getName(), metas.getHead(), null, cache, network, alias, keys, metaRecordHash, callback);
     }
 
     public static void readFiles(Cache cache, Network network, String alias, KeyPair keys, ByteString fileRecordHash, RecordCallback callback) throws IOException {
         final PoWChannel files = new PoWChannel(SPACE_PREFIX_FILE + alias, BC.THRESHOLD_STANDARD);
         ChannelUtils.loadHead(files, cache, network);
-        ByteString head = files.getHead();
-        ChannelUtils.read(head, null, cache, alias, keys, fileRecordHash, callback);
+        ChannelUtils.read(files.getName(), files.getHead(), null, cache, network, alias, keys, fileRecordHash, callback);
     }
 
     public static void readPreviews(Cache cache, Network network, String alias, KeyPair keys, ByteString previewRecordHash, ByteString metaRecordHash, RecordCallback previewCallback) throws IOException {
         final PoWChannel previews = new PoWChannel(SPACE_PREFIX_PREVIEW + new String(BCUtils.encodeBase64URL(metaRecordHash.toByteArray())), BC.THRESHOLD_STANDARD);
-        ChannelUtils.loadHead(previews, cache, network);
-        ByteString head = previews.getHead();
-        ChannelUtils.read(head, null, cache, alias, keys, previewRecordHash, previewCallback);
+        try {
+            ChannelUtils.pull(previews, cache, network);
+        } catch (NoSuchAlgorithmException e) {
+            /* Ignored */
+            e.printStackTrace();
+        }
+        ChannelUtils.read(previews.getName(), previews.getHead(), null, cache, network, alias, keys, previewRecordHash, previewCallback);
     }
 
-    public static void readShares(Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
+    public static void readShares(Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback shareCallback, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
         final PoWChannel shares = new PoWChannel(SPACE_PREFIX_SHARE + alias, BC.THRESHOLD_STANDARD);
         try {
             ChannelUtils.pull(shares, cache, network);
@@ -246,21 +248,19 @@ public final class SpaceUtils {
             /* Ignored */
             e.printStackTrace();
         }
-        ByteString head = shares.getHead();
-        ChannelUtils.read(head, null, cache, alias, keys, shareRecordHash, new RecordCallback() {
+        ChannelUtils.read(shares.getName(), shares.getHead(), null, cache, network, alias, keys, shareRecordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
                 try {
+                    if (shareCallback != null) {
+                        shareCallback.onRecord(blockHash, block, blockEntry, key, payload);
+                    }
                     Share share = Share.newBuilder().mergeFrom(payload).build();
-                    // System.out.println("Share: " + share);
                     Reference sharedMetaReference = share.getMetaReference();
                     if (metaRecordHash == null || sharedMetaReference.getRecordHash().equals(metaRecordHash)) {
-                        // System.out.println("Shared Reference: " + new String(BCUtils.encodeBase64URL(sharedMetaReference.getRecordHash().toByteArray())));
-                        Block sharedMetaBlock = ChannelUtils.getBlock(sharedMetaReference.getChannelName(), cache, network, sharedMetaReference.getBlockHash());
-                        // System.out.println("Shared Block: " + sharedMetaBlock);
+                        Block sharedMetaBlock = network.getBlock(sharedMetaReference);
                         if (sharedMetaBlock != null) {
                             for (BlockEntry sharedMetaBlockEntry : sharedMetaBlock.getEntryList()) {
-                                // System.out.println("Shared Record: " + sharedMetaBlockEntry.getRecord());
                                 if (sharedMetaReference.getRecordHash().equals(sharedMetaBlockEntry.getRecordHash())) {
                                     Record sharedMetaRecord = sharedMetaBlockEntry.getRecord();
                                     if (metaCallback != null) {
@@ -279,12 +279,11 @@ public final class SpaceUtils {
                                         int count = Math.min(chunkKeys.size(), chunkReferences.size());
                                         for (int i = 0; i < count; i++) {
                                             Reference chunkReference = chunkReferences.get(i);
-                                            Block chunkBlock = ChannelUtils.getBlock(chunkReference.getChannelName(), cache, network, chunkReference.getBlockHash());
+                                            Block chunkBlock = network.getBlock(chunkReference);
                                             if (chunkBlock != null) {
                                                 for (BlockEntry chunkEntry : chunkBlock.getEntryList()) {
                                                     if (chunkReference.getRecordHash().equals(chunkEntry.getRecordHash())) {
                                                         Record chunkRecord = chunkEntry.getRecord();
-                                                        // System.out.println("Shared Chunk: " + chunkRecord);
                                                         try {
                                                             byte[] chunkKey = chunkKeys.get(i).toByteArray();
                                                             byte[] decryptedPayload = Crypto.decryptAES(chunkKey, chunkRecord.getPayload().toByteArray());
