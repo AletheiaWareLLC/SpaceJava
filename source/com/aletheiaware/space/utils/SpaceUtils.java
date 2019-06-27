@@ -110,6 +110,10 @@ public final class SpaceUtils {
 
     private SpaceUtils() {}
 
+    public static String getSpaceHostname(boolean debug) {
+        return debug ? SPACE_HOST_TEST : SPACE_HOST;
+    }
+
     public static String getFileType(File file) throws IOException {
         String type = null;
         try {
