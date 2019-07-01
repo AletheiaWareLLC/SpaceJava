@@ -20,7 +20,8 @@ set -x
 if [ -d out ]; then
     rm -r out
 fi
-mkdir out
+mkdir -p out/code
+mkdir -p out/test
 
 SOURCES=(
     source/com/aletheiaware/space/Space.java
@@ -32,8 +33,8 @@ PROTO_SOURCES=(
 )
 
 # Compile code
-javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar ${SOURCES[*]} ${PROTO_SOURCES[*]} -d out
-jar cvf out/SpaceJava.jar -C out .
+javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar ${SOURCES[*]} ${PROTO_SOURCES[*]} -d out/code
+jar cvf out/SpaceJava.jar -C out/code .
 
 
 TEST_SOURCES=(
@@ -42,8 +43,8 @@ TEST_SOURCES=(
 )
 
 # Compile tests
-javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar ${TEST_SOURCES[*]} -d out
-jar cvf out/SpaceJavaTest.jar -C out .
+javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar ${TEST_SOURCES[*]} -d out/test
+jar cvf out/SpaceJavaTest.jar -C out/test .
 
 # Run tests
 java -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar:out/SpaceJavaTest.jar org.junit.runner.JUnitCore com.aletheiaware.space.AllTests
