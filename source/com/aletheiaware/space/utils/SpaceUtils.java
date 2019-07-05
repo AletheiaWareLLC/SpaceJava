@@ -99,9 +99,11 @@ public final class SpaceUtils {
     public static final String TEXT_PLAIN_TYPE = "text/plain";
     public static final String PROTOBUF_TYPE = "application/x-protobuf";
     public static final String VIDEO_MPEG_TYPE = "video/mpeg";
+    public static final String AUDIO_MPEG_TYPE = "audio/mpeg";
 
     public static final String DEFAULT_IMAGE_TYPE = "image/jpeg";
     public static final String DEFAULT_VIDEO_TYPE = "video/mpeg";
+    public static final String DEFAULT_AUDIO_TYPE = "audio/mpeg";
 
     public static final int PREVIEW_IMAGE_SIZE = 128;
     public static final int PREVIEW_TEXT_LENGTH = 64;
@@ -141,11 +143,17 @@ public final class SpaceUtils {
             type = PROTOBUF_TYPE;
         } else if (ext.endsWith(".mpg") || ext.endsWith(".mpeg")  || ext.endsWith(".mp4")) {
             type = VIDEO_MPEG_TYPE;
+        } else if (ext.endsWith(".mp3")) {
+            type = AUDIO_MPEG_TYPE;
         } else {
             type = UNKNOWN_TYPE;
             System.err.println("Unrecognized extention: " + ext);
         }
         return type;
+    }
+
+    public static boolean isAudio(String type) {
+        return type.startsWith("audio/");
     }
 
     public static boolean isVideo(String type) {
