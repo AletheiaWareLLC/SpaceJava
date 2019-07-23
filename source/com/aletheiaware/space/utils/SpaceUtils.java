@@ -31,8 +31,8 @@ import com.aletheiaware.bc.Channel.RecordCallback;
 import com.aletheiaware.bc.Crypto;
 import com.aletheiaware.bc.Network;
 import com.aletheiaware.bc.PoWChannel;
-import com.aletheiaware.bc.utils.BCUtils;
 import com.aletheiaware.bc.utils.ChannelUtils;
+import com.aletheiaware.common.utils.CommonUtils;
 import com.aletheiaware.finance.FinanceProto.Subscription;
 import com.aletheiaware.space.SpaceProto.Meta;
 import com.aletheiaware.space.SpaceProto.Share;
@@ -242,7 +242,7 @@ public final class SpaceUtils {
     }
 
     public static void readPreviews(Cache cache, Network network, String alias, KeyPair keys, ByteString previewRecordHash, ByteString metaRecordHash, RecordCallback previewCallback) throws IOException {
-        final PoWChannel previews = new PoWChannel(SPACE_PREFIX_PREVIEW + new String(BCUtils.encodeBase64URL(metaRecordHash.toByteArray())), BC.THRESHOLD_STANDARD);
+        final PoWChannel previews = new PoWChannel(SPACE_PREFIX_PREVIEW + new String(CommonUtils.encodeBase64URL(metaRecordHash.toByteArray())), BC.THRESHOLD_STANDARD);
         try {
             ChannelUtils.pull(previews, cache, network);
         } catch (NoSuchAlgorithmException e) {

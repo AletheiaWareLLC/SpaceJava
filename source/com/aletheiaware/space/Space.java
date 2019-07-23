@@ -18,7 +18,7 @@ package com.aletheiaware.space;
 
 import com.aletheiaware.bc.Crypto;
 import com.aletheiaware.bc.utils.BCUtils;
-import com.aletheiaware.bc.utils.BCUtils.Pair;
+import com.aletheiaware.common.utils.CommonUtils.Pair;
 
 import java.io.Console;
 import java.io.File;

@@ -33,7 +33,7 @@ PROTO_SOURCES=(
 )
 
 # Compile code
-javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar ${SOURCES[*]} ${PROTO_SOURCES[*]} -d out/code
+javac -cp libs/AletheiaWareCommonJava.jar:libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar ${SOURCES[*]} ${PROTO_SOURCES[*]} -d out/code
 jar cvf out/SpaceJava.jar -C out/code .
 
 
@@ -43,11 +43,11 @@ TEST_SOURCES=(
 )
 
 # Compile tests
-javac -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar ${TEST_SOURCES[*]} -d out/test
+javac -cp libs/AletheiaWareCommonJava.jar:libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar ${TEST_SOURCES[*]} -d out/test
 jar cvf out/SpaceJavaTest.jar -C out/test .
 
 # Run tests
-java -cp libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar:out/SpaceJavaTest.jar org.junit.runner.JUnitCore com.aletheiaware.space.AllTests
+java -cp libs/AletheiaWareCommonJava.jar:libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:libs/junit-4.12.jar:libs/hamcrest-core-1.3.jar:libs/mockito-all-1.10.19.jar:out/SpaceJava.jar:out/SpaceJavaTest.jar org.junit.runner.JUnitCore com.aletheiaware.space.AllTests
 
 # Checkstyle
 java -jar libs/checkstyle-8.11-all.jar -c ../checkstyle.xml ${SOURCES[*]} ${TEST_SOURCES[*]} > out/style || true

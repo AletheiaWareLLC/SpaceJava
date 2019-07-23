@@ -14,6 +14,7 @@ Protocol Buffers
 JAR Libraries
 
     mkdir libs
+    ln -s <awcommonjavalib> libs/AletheiaWareCommonJava.jar
     ln -s <bcjavalib> libs/BCJava.jar
     ln -s <aliasjavalib> libs/AliasJava.jar
     ln -s <financejavalib> libs/FinanceJava.jar
