@@ -270,7 +270,7 @@ public final class SpaceUtils {
                     Share share = Share.newBuilder().mergeFrom(payload).build();
                     Reference sharedMetaReference = share.getMetaReference();
                     if (metaRecordHash == null || sharedMetaReference.getRecordHash().equals(metaRecordHash)) {
-                        Block sharedMetaBlock = network.getBlock(sharedMetaReference);
+                        Block sharedMetaBlock = ChannelUtils.getBlockContainingRecord(sharedMetaReference.getChannelName(), cache, network, sharedMetaReference.getRecordHash());
                         if (sharedMetaBlock != null) {
                             for (BlockEntry sharedMetaBlockEntry : sharedMetaBlock.getEntryList()) {
                                 if (sharedMetaReference.getRecordHash().equals(sharedMetaBlockEntry.getRecordHash())) {
@@ -291,7 +291,7 @@ public final class SpaceUtils {
                                         int count = Math.min(chunkKeys.size(), chunkReferences.size());
                                         for (int i = 0; i < count; i++) {
                                             Reference chunkReference = chunkReferences.get(i);
-                                            Block chunkBlock = network.getBlock(chunkReference);
+                                            Block chunkBlock = ChannelUtils.getBlockContainingRecord(chunkReference.getChannelName(), cache, network, chunkReference.getRecordHash());
                                             if (chunkBlock != null) {
                                                 for (BlockEntry chunkEntry : chunkBlock.getEntryList()) {
                                                     if (chunkReference.getRecordHash().equals(chunkEntry.getRecordHash())) {
@@ -313,7 +313,7 @@ public final class SpaceUtils {
                             }
                         }
                     }
-                } catch (InvalidProtocolBufferException e) {
+                } catch (InvalidProtocolBufferException | NoSuchAlgorithmException e) {
                     e.printStackTrace();
                 }
                 return true;
