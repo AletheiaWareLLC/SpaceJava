@@ -108,6 +108,7 @@ public final class SpaceUtils {
     public static final String IMAGE_PNG_TYPE = "image/png";
     public static final String IMAGE_WEBP_TYPE = "image/webp";
     public static final String TEXT_PLAIN_TYPE = "text/plain";
+    public static final String PDF_TYPE = "application/pdf";
     public static final String PROTOBUF_TYPE = "application/x-protobuf";
     public static final String VIDEO_MPEG_TYPE = "video/mpeg";
     public static final String AUDIO_MPEG_TYPE = "audio/mpeg";
@@ -150,6 +151,8 @@ public final class SpaceUtils {
             type = IMAGE_WEBP_TYPE;
         } else if (ext.endsWith(".txt")) {
             type = TEXT_PLAIN_TYPE;
+        } else if (ext.endsWith(".pdf")) {
+            type = PDF_TYPE;
         } else if (ext.endsWith(".pb") || ext.endsWith(".proto")) {
             type = PROTOBUF_TYPE;
         } else if (ext.endsWith(".mpg") || ext.endsWith(".mpeg")  || ext.endsWith(".mp4")) {
