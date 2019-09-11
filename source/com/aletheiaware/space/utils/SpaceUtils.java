@@ -35,6 +35,8 @@ import com.aletheiaware.bc.utils.ChannelUtils;
 import com.aletheiaware.common.utils.CommonUtils;
 import com.aletheiaware.finance.FinanceProto.Subscription;
 import com.aletheiaware.space.SpaceProto.Meta;
+import com.aletheiaware.space.SpaceProto.Miner;
+import com.aletheiaware.space.SpaceProto.Registrar;
 import com.aletheiaware.space.SpaceProto.Share;
 
 import com.google.protobuf.ByteString;
@@ -64,9 +66,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -91,6 +95,13 @@ public final class SpaceUtils {
     public static final String SPACE_PREFIX_PREVIEW = "Space-Preview-";
     public static final String SPACE_PREFIX_SHARE = "Space-Share-";
     public static final String SPACE_PREFIX_TAG = "Space-Tag-";
+
+    // TODO public static final String SPACE_CHARGE = "Space-Charge";
+    public static final String SPACE_MINER = "Space-Miner";
+    public static final String SPACE_REGISTRAR = "Space-Registrar";
+    // TODO public static final String SPACE_REGISTRATION = "Space-Registration";
+    // TODO public static final String SPACE_SUBSCRIPTION = "Space-Subscription";
+    // TODO public static final String SPACE_USAGE = "Space-Usage";
 
     public static final String UNKNOWN_TYPE = "?/?";
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
@@ -191,37 +202,58 @@ public final class SpaceUtils {
         });
     }
 
-    /**
-     * Sorts a list of hosts by the registration and subscription information.
-     */
-    public static void sort(List<String> hosts, Map<String, String> registrationIds, Map<String, String> subscriptionStorageIds, Map<String, String> subscriptionMiningIds) {
-        Collections.sort(hosts, new Comparator<String>() {
+    public static Map<String, Miner> getMiners(Cache cache, Network network) throws IOException {
+        final PoWChannel miners = new PoWChannel(SPACE_MINER, BC.THRESHOLD_STANDARD);
+        try {
+            ChannelUtils.pull(miners, cache, network);
+        } catch (NoSuchAlgorithmException e) {
+            /* Ignored */
+            e.printStackTrace();
+        }
+        Map<String, Miner> ms = new HashMap<>();
+        ChannelUtils.read(miners.getName(), miners.getHead(), null, cache, network, null, null, null, new RecordCallback() {
             @Override
-            public int compare(String m1, String m2) {
-                if (!registrationIds.containsKey(m1)) {
-                    return 1;
+            public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
+                try {
+                    Miner m = Miner.newBuilder().mergeFrom(payload).build();
+                    String a = m.getMerchant().getAlias();
+                    if (!ms.containsKey(a)) {
+                        ms.put(a, m);
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    e.printStackTrace();
                 }
-                if (!registrationIds.containsKey(m2)) {
-                    return -1;
-                }
-                // Registration with both hosts
-                if (!subscriptionStorageIds.containsKey(m1)) {
-                    return 1;
-                }
-                if (!subscriptionStorageIds.containsKey(m1)) {
-                    return -1;
-                }
-                // Storage subscription with both hosts
-                if (!subscriptionMiningIds.containsKey(m1)) {
-                    return 1;
-                }
-                if (!subscriptionMiningIds.containsKey(m1)) {
-                    return -1;
-                }
-                // Mining subscription with both hosts
-                return Integer.compare(m1.length(), m2.length());
+                return true;
             }
         });
+        return ms;
+    }
+
+    public static Map<String, Registrar> getRegistrars(Cache cache, Network network) throws IOException {
+        final PoWChannel registrars = new PoWChannel(SPACE_REGISTRAR, BC.THRESHOLD_STANDARD);
+        try {
+            ChannelUtils.pull(registrars, cache, network);
+        } catch (NoSuchAlgorithmException e) {
+            /* Ignored */
+            e.printStackTrace();
+        }
+        Map<String, Registrar> rs = new HashMap<>();
+        ChannelUtils.read(registrars.getName(), registrars.getHead(), null, cache, network, null, null, null, new RecordCallback() {
+            @Override
+            public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
+                try {
+                    Registrar r = Registrar.newBuilder().mergeFrom(payload).build();
+                    String a = r.getMerchant().getAlias();
+                    if (!rs.containsKey(a)) {
+                        rs.put(a, r);
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        });
+        return rs;
     }
 
     public static void readMetas(Cache cache, Network network, String alias, KeyPair keys, ByteString metaRecordHash, RecordCallback callback) throws IOException {
