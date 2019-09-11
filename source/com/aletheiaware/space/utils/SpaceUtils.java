@@ -356,7 +356,12 @@ public final class SpaceUtils {
         });
     }
 
-    public static Reference postRecord(String host, String feature, Record record) throws IOException {
+    public static interface RemoteMiningListener {
+        void onReference(Reference reference);
+        void onBlock(ByteString hash, Block block);
+    }
+
+    public static void postRecord(String host, String feature, Record record, int results, RemoteMiningListener listener) throws IOException, NoSuchAlgorithmException {
         URL url = new URL(host + "/mining/" + feature);
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setDoOutput(true);
@@ -373,9 +378,13 @@ public final class SpaceUtils {
         InputStream in = conn.getInputStream();
         int response = conn.getResponseCode();
         System.out.println("Response: " + response);
-        Reference result = null;
         if (response == HttpsURLConnection.HTTP_OK) {
-            result = Reference.parseDelimitedFrom(in);
+            for (int i = 0; i < results && listener != null; i++) {
+                listener.onReference(Reference.parseDelimitedFrom(in));
+                Block block = Block.parseDelimitedFrom(in);
+                ByteString hash = ByteString.copyFrom(Crypto.getProtobufHash(block));
+                listener.onBlock(hash, block);
+            }
         } else {
             StringBuilder sb = new StringBuilder();
             Scanner s = new Scanner(err);
@@ -384,14 +393,11 @@ public final class SpaceUtils {
                 sb.append("\n");
             }
             System.err.println("Error: " + sb.toString());
-        }
-        if (result == null) {
             // Disconnect in case of TCP Keep Alive issues
             out.close();
             in.close();
             conn.disconnect();
         }
-        return result;
     }
 
 }
