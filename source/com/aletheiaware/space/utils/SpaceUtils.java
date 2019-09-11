@@ -96,12 +96,12 @@ public final class SpaceUtils {
     public static final String SPACE_PREFIX_SHARE = "Space-Share-";
     public static final String SPACE_PREFIX_TAG = "Space-Tag-";
 
-    // TODO public static final String SPACE_CHARGE = "Space-Charge";
+    public static final String SPACE_CHARGE = "Space-Charge";
     public static final String SPACE_MINER = "Space-Miner";
     public static final String SPACE_REGISTRAR = "Space-Registrar";
-    // TODO public static final String SPACE_REGISTRATION = "Space-Registration";
-    // TODO public static final String SPACE_SUBSCRIPTION = "Space-Subscription";
-    // TODO public static final String SPACE_USAGE = "Space-Usage";
+    public static final String SPACE_REGISTRATION = "Space-Registration";
+    public static final String SPACE_SUBSCRIPTION = "Space-Subscription";
+    public static final String SPACE_USAGE = "Space-Usage";
 
     public static final String UNKNOWN_TYPE = "?/?";
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
