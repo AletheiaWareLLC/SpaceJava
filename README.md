@@ -9,7 +9,7 @@ Setup
 Protocol Buffers
 
     cd <path/to/Space>
-    ./build.sh --javalite_out=<path/to/SpaceJava>/source/
+    ./build.sh --java_out=lite:<path/to/SpaceJava>/source/
 
 JAR Libraries
 
