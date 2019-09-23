@@ -5,20 +5,19 @@ This is a Java implementation of Space - secure, private, storage.
 
 Setup
 =====
+SpaceJava should be in the same parent directory as the following prerequisite projects;
+
+    AletheiaWareCommonJava
+    AliasJava
+    BCJava
+    FinanceJava
+    JavaCommon
+    Space
 
 Protocol Buffers
 
     cd <path/to/Space>
     ./build.sh --java_out=lite:<path/to/SpaceJava>/source/
-
-JAR Libraries
-
-    mkdir libs
-    ln -s <awcommonjavalib> libs/AletheiaWareCommonJava.jar
-    ln -s <bcjavalib> libs/BCJava.jar
-    ln -s <aliasjavalib> libs/AliasJava.jar
-    ln -s <financejavalib> libs/FinanceJava.jar
-    ln -s <protolib> libs/protobuf-lite-3.0.1.jar
 
 Build
 =====
