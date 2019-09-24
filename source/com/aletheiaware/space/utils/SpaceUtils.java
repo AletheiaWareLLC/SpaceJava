@@ -89,7 +89,7 @@ public final class SpaceUtils {
     public static final String SPACE_HOST = "space.aletheiaware.com";
     public static final String SPACE_HOST_TEST = "test-space.aletheiaware.com";
 
-    // Application-{Tool,Feature}-Hash
+    // Application-{Tool,Feature}-{Alias,Hash}
     public static final String SPACE_PREFIX_FILE = "Space-File-";
     public static final String SPACE_PREFIX_META = "Space-Meta-";
     public static final String SPACE_PREFIX_PREVIEW = "Space-Preview-";
@@ -97,11 +97,12 @@ public final class SpaceUtils {
     public static final String SPACE_PREFIX_TAG = "Space-Tag-";
 
     public static final String SPACE_CHARGE = "Space-Charge";
+    public static final String SPACE_INVOICE = "Space-Invoice";
     public static final String SPACE_MINER = "Space-Miner";
     public static final String SPACE_REGISTRAR = "Space-Registrar";
     public static final String SPACE_REGISTRATION = "Space-Registration";
     public static final String SPACE_SUBSCRIPTION = "Space-Subscription";
-    public static final String SPACE_USAGE = "Space-Usage";
+    public static final String SPACE_USAGE_RECORD = "Space-Usage-Record";
 
     public static final String UNKNOWN_TYPE = "?/?";
     public static final String IMAGE_JPEG_TYPE = "image/jpeg";
@@ -205,16 +206,51 @@ public final class SpaceUtils {
         });
     }
 
-    public static Map<String, Miner> getMiners(Cache cache, Network network) throws IOException {
-        final PoWChannel miners = new PoWChannel(SPACE_MINER, BC.THRESHOLD_STANDARD);
+    public static PoWChannel getChargeChannel() {
+        return new PoWChannel(SPACE_CHARGE, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getInvoiceChannel() {
+        return new PoWChannel(SPACE_INVOICE, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getMinerChannel() {
+        return new PoWChannel(SPACE_MINER, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getRegistrarChannel() {
+        return new PoWChannel(SPACE_REGISTRAR, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getUsageRecordChannel() {
+        return new PoWChannel(SPACE_USAGE_RECORD, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getMetaChannel(String alias) {
+        return new PoWChannel(SPACE_PREFIX_META + alias, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getFileChannel(String alias) {
+        return new PoWChannel(SPACE_PREFIX_FILE + alias, BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getPreviewChannel(ByteString metaRecordHash) {
+        return new PoWChannel(SPACE_PREFIX_PREVIEW + new String(CommonUtils.encodeBase64URL(metaRecordHash.toByteArray())), BC.THRESHOLD_STANDARD);
+    }
+
+    public static PoWChannel getShareChannel(String alias) {
+        return new PoWChannel(SPACE_PREFIX_SHARE + alias, BC.THRESHOLD_STANDARD);
+    }
+
+    public static Map<String, Miner> readMiners(PoWChannel miners, Cache cache, Network network, ByteString recordHash) throws IOException {
+        ChannelUtils.loadHead(miners, cache);
         try {
             ChannelUtils.pull(miners, cache, network);
         } catch (NoSuchAlgorithmException e) {
-            /* Ignored */
             e.printStackTrace();
         }
         Map<String, Miner> ms = new HashMap<>();
-        ChannelUtils.read(miners.getName(), miners.getHead(), null, cache, network, null, null, null, new RecordCallback() {
+        ChannelUtils.read(miners.getName(), miners.getHead(), null, cache, network, null, null, recordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
                 try {
@@ -232,16 +268,15 @@ public final class SpaceUtils {
         return ms;
     }
 
-    public static Map<String, Registrar> getRegistrars(Cache cache, Network network) throws IOException {
-        final PoWChannel registrars = new PoWChannel(SPACE_REGISTRAR, BC.THRESHOLD_STANDARD);
+    public static Map<String, Registrar> readRegistrars(PoWChannel registrars, Cache cache, Network network, ByteString recordHash) throws IOException {
+        ChannelUtils.loadHead(registrars, cache);
         try {
             ChannelUtils.pull(registrars, cache, network);
         } catch (NoSuchAlgorithmException e) {
-            /* Ignored */
             e.printStackTrace();
         }
         Map<String, Registrar> rs = new HashMap<>();
-        ChannelUtils.read(registrars.getName(), registrars.getHead(), null, cache, network, null, null, null, new RecordCallback() {
+        ChannelUtils.read(registrars.getName(), registrars.getHead(), null, cache, network, null, null, recordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
                 try {
@@ -259,42 +294,7 @@ public final class SpaceUtils {
         return rs;
     }
 
-    public static void readMetas(Cache cache, Network network, String alias, KeyPair keys, ByteString metaRecordHash, RecordCallback callback) throws IOException {
-        final PoWChannel metas = new PoWChannel(SPACE_PREFIX_META + alias, BC.THRESHOLD_STANDARD);
-        try {
-            ChannelUtils.pull(metas, cache, network);
-        } catch (NoSuchAlgorithmException e) {
-            /* Ignored */
-            e.printStackTrace();
-        }
-        ChannelUtils.read(metas.getName(), metas.getHead(), null, cache, network, alias, keys, metaRecordHash, callback);
-    }
-
-    public static void readFiles(Cache cache, Network network, String alias, KeyPair keys, ByteString fileRecordHash, RecordCallback callback) throws IOException {
-        final PoWChannel files = new PoWChannel(SPACE_PREFIX_FILE + alias, BC.THRESHOLD_STANDARD);
-        ChannelUtils.loadHead(files, cache, network);
-        ChannelUtils.read(files.getName(), files.getHead(), null, cache, network, alias, keys, fileRecordHash, callback);
-    }
-
-    public static void readPreviews(Cache cache, Network network, String alias, KeyPair keys, ByteString previewRecordHash, ByteString metaRecordHash, RecordCallback previewCallback) throws IOException {
-        final PoWChannel previews = new PoWChannel(SPACE_PREFIX_PREVIEW + new String(CommonUtils.encodeBase64URL(metaRecordHash.toByteArray())), BC.THRESHOLD_STANDARD);
-        try {
-            ChannelUtils.pull(previews, cache, network);
-        } catch (NoSuchAlgorithmException e) {
-            /* Ignored */
-            e.printStackTrace();
-        }
-        ChannelUtils.read(previews.getName(), previews.getHead(), null, cache, network, alias, keys, previewRecordHash, previewCallback);
-    }
-
-    public static void readShares(Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback shareCallback, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
-        final PoWChannel shares = new PoWChannel(SPACE_PREFIX_SHARE + alias, BC.THRESHOLD_STANDARD);
-        try {
-            ChannelUtils.pull(shares, cache, network);
-        } catch (NoSuchAlgorithmException e) {
-            /* Ignored */
-            e.printStackTrace();
-        }
+    public static void readShares(PoWChannel shares, Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback shareCallback, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
         ChannelUtils.read(shares.getName(), shares.getHead(), null, cache, network, alias, keys, shareRecordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
