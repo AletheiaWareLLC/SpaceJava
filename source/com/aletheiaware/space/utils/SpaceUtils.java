@@ -86,9 +86,6 @@ public final class SpaceUtils {
 
     public static final String TAG = "Space";
 
-    public static final String SPACE_HOST = "space.aletheiaware.com";
-    public static final String SPACE_HOST_TEST = "test-space.aletheiaware.com";
-
     // Application-{Tool,Feature}-{Alias,Hash}
     public static final String SPACE_PREFIX_FILE = "Space-File-";
     public static final String SPACE_PREFIX_META = "Space-Meta-";
@@ -125,8 +122,16 @@ public final class SpaceUtils {
 
     private SpaceUtils() {}
 
-    public static String getSpaceHostname(boolean debug) {
-        return debug ? SPACE_HOST_TEST : SPACE_HOST;
+    public static String[] getSpaceHosts(boolean debug) {
+        if (debug) {
+            return new String[]{
+                "test-space.aletheiaware.com",
+            };
+        }
+        return new String[]{
+            "space-nyc.aletheiaware.com",
+            "space-sfo.aletheiaware.com",
+        };
     }
 
     public static String getFileType(File file) throws IOException {
