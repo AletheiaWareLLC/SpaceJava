@@ -247,56 +247,52 @@ public final class SpaceUtils {
         return new PoWChannel(SPACE_PREFIX_SHARE + alias, BC.THRESHOLD_STANDARD);
     }
 
-    public static Map<String, Miner> readMiners(PoWChannel miners, Cache cache, Network network, ByteString recordHash) throws IOException {
+    public interface MinerCallback {
+        boolean onMiner(BlockEntry entry, Miner miner);
+    }
+
+    public static void readMiners(PoWChannel miners, Cache cache, Network network, ByteString recordHash, MinerCallback callback) throws IOException {
         ChannelUtils.loadHead(miners, cache);
         try {
             ChannelUtils.pull(miners, cache, network);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        Map<String, Miner> ms = new HashMap<>();
         ChannelUtils.read(miners.getName(), miners.getHead(), null, cache, network, null, null, recordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
                 try {
-                    Miner m = Miner.newBuilder().mergeFrom(payload).build();
-                    String a = m.getMerchant().getAlias();
-                    if (!ms.containsKey(a)) {
-                        ms.put(a, m);
-                    }
+                    return callback.onMiner(blockEntry, Miner.newBuilder().mergeFrom(payload).build());
                 } catch (InvalidProtocolBufferException e) {
                     e.printStackTrace();
                 }
                 return true;
             }
         });
-        return ms;
     }
 
-    public static Map<String, Registrar> readRegistrars(PoWChannel registrars, Cache cache, Network network, ByteString recordHash) throws IOException {
+    public interface RegistrarCallback {
+        boolean onRegistrar(BlockEntry entry, Registrar registrar);
+    }
+
+    public static void readRegistrars(PoWChannel registrars, Cache cache, Network network, ByteString recordHash, RegistrarCallback callback) throws IOException {
         ChannelUtils.loadHead(registrars, cache);
         try {
             ChannelUtils.pull(registrars, cache, network);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        Map<String, Registrar> rs = new HashMap<>();
         ChannelUtils.read(registrars.getName(), registrars.getHead(), null, cache, network, null, null, recordHash, new RecordCallback() {
             @Override
             public boolean onRecord(ByteString blockHash, Block block, BlockEntry blockEntry, byte[] key, byte[] payload) {
                 try {
-                    Registrar r = Registrar.newBuilder().mergeFrom(payload).build();
-                    String a = r.getMerchant().getAlias();
-                    if (!rs.containsKey(a)) {
-                        rs.put(a, r);
-                    }
+                    return callback.onRegistrar(blockEntry, Registrar.newBuilder().mergeFrom(payload).build());
                 } catch (InvalidProtocolBufferException e) {
                     e.printStackTrace();
                 }
                 return true;
             }
         });
-        return rs;
     }
 
     public static void readShares(PoWChannel shares, Cache cache, Network network, String alias, KeyPair keys, ByteString shareRecordHash, ByteString metaRecordHash, RecordCallback shareCallback, RecordCallback metaCallback, RecordCallback fileCallback) throws IOException {
