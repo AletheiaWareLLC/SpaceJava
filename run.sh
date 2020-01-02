@@ -17,4 +17,4 @@
 set -e
 set -x
 
-java -classpath libs/AletheiaWareCommonJava.jar:libs/AliasJava.jar:libs/BCJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:out/SpaceJava.jar com.aletheiaware.space.Space
+java -classpath libs/AletheiaWareCommonJava.jar:libs/AliasJava.jar:libs/BCJava.jar:libs/CryptoJava.jar:libs/FinanceJava.jar:libs/protobuf-lite-3.0.1.jar:out/SpaceJava.jar com.aletheiaware.space.Space

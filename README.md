@@ -10,6 +10,7 @@ SpaceJava should be in the same parent directory as the following prerequisite p
     AletheiaWareCommonJava
     AliasJava
     BCJava
+    CryptoJava
     FinanceJava
     JavaCommon
     Space
